@@ -97,8 +97,8 @@ bot.action('SHOW_TARIFS', (ctx) => {
     `└ Цена: **${vipPrice.toLocaleString()} сум / мес**\n\n` +
     `💡 *Скидка за рефералов применяется автоматически.*`,
     Markup.inlineKeyboard([
-      [Markup.button.url('💳 Купить PRO (Click)', `https://my.click.uz/services/pay?service_id=${process.env.CLICK_SERVICE_ID \vert{}\vert{} '0'}&merchant_id=${process.env.CLICK_MERCHANT_ID || '0'}&amount=${proPrice}&transaction_param=${telegramId}_PRO`)],
-      [Markup.button.url('💳 Купить VIP (Click)', `https://my.click.uz/services/pay?service_id=${process.env.CLICK_SERVICE_ID \vert{}\vert{} '0'}&merchant_id=${process.env.CLICK_MERCHANT_ID || '0'}&amount=${vipPrice}&transaction_param=${telegramId}_VIP`)],
+      [Markup.button.url('💳 Купить PRO (Click)', `https://my.click.uz/services/pay?service_id=${process.env.CLICK_SERVICE_ID || '0'}&merchant_id=${process.env.CLICK_MERCHANT_ID || '0'}&amount=${proPrice}&transaction_param=${telegramId}_PRO`)],
+      [Markup.button.url('💳 Купить VIP (Click)', `https://my.click.uz/services/pay?service_id=${process.env.CLICK_SERVICE_ID || '0'}&merchant_id=${process.env.CLICK_MERCHANT_ID || '0'}&amount=${vipPrice}&transaction_param=${telegramId}_VIP`)],
       [Markup.button.callback('« Назад', 'BACK_TO_MAIN')]
     ])
   );
