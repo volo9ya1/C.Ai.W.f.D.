@@ -2,7 +2,7 @@
 // 1. КОНФИГУРАЦИЯ И ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
 // ==========================================
 // Замените этот URL на адрес вашего сервера на Render после деплоя бэкенда
-const BACKEND_URL = 'https://your-backend-domain.onrender.com';
+const BACKEND_URL = 'https://c-ai-w-f-d-1.onrender.com';
 
 const tg = window.Telegram?.WebApp;
 let telegramUser = null;
