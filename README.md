@@ -1,5 +1,4 @@
 # C.Ai.W.f.D.
-
 #CUSTOM AI WEBAPP for DESIGNERS
 
 Веб-приложение (Telegram Web App) для селлеров маркетплейсов. 
