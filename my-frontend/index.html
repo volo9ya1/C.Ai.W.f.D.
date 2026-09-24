@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>E-Commerce AI Combain</title>
+
+  <!-- Стили приложения -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Telegram Web App SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+
+  <div class="app-container">
+
+    <!-- ==========================================
+         1. ШАПКА ПРИЛОЖЕНИЯ (HEADER)
+         ========================================== -->
+    <header class="glass-card header">
+      <h1>🚀 E-Commerce AI Combain</h1>
+      <div id="limitCounter" class="limit-badge">Синхронизация...</div>
+    </header>
+
+    <main class="main-content">
+
+      <!-- ==========================================
+           2. ФОРМА ВВОДА ДАННЫХ О ТОВАРЕ
+           ========================================== -->
+      <section class="card glass-card">
+        <h3>📝 Данные о товаре</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem; margin-bottom: 1rem;">
+          Заполните параметры для автоматической генерации SEO-текста и слайдов инфографики.
+        </p>
+
+        <div class="form-group">
+          <label for="productName" style="font-size: 0.85rem; color: var(--text-muted);">Название товара:</label>
+          <input type="text" id="productName" class="glass-input" placeholder="Например: Беспроводная игровая мышь RGB">
+        </div>
+
+        <div class="form-group">
+          <label for="productPrice" style="font-size: 0.85rem; color: var(--text-muted);">Цена товара:</label>
+          <input type="text" id="productPrice" class="glass-input" placeholder="Например: 199 000 сум">
+        </div>
+
+        <div class="form-group">
+          <label for="productDetails" style="font-size: 0.85rem; color: var(--text-muted);">Ключевые характеристики и плюсы:</label>
+          <textarea id="productDetails" class="glass-input" placeholder="• Бесшумный клик&#10;• До 70 часов работы&#10;• Разрешение 3200 DPI"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="imageUploader" style="font-size: 0.85rem; color: var(--text-muted);">Фото товара (без фона или на белом фоне):</label>
+          <input type="file" id="imageUploader" accept="image/*" class="glass-input">
+        </div>
+
+        <button class="btn btn-primary glass-btn-primary" onclick="generateContent()">
+          ✨ Сгенерировать пак карточки
+        </button>
+      </section>
+
+      <!-- ==========================================
+           3. ВИЗУАЛЬНЫЙ КОНСТРУКТОР (CANVAS & SLIDES)
+           ========================================== -->
+      <section class="card result-card visual-card-editor glass-card">
+        <div class="card-header">
+          <h3>🎨 Инфографика (Пак слайдов)</h3>
+          
+          <!-- Переключатель слайдов -->
+          <div class="slide-selector-group">
+            <button class="btn-sm glass-btn active" onclick="selectSlide(1)">1: Главный</button>
+            <button class="btn-sm glass-btn" onclick="selectSlide(2)">2: Размеры</button>
+            <button class="btn-sm glass-btn" onclick="selectSlide(3)">3: Комплект</button>
+            <button class="btn-sm glass-btn" onclick="selectSlide(4)">4: Плюсы</button>
+            <button class="btn-sm glass-btn" onclick="selectSlide(5)">5: Сравнение</button>
+          </div>
+
+          <!-- Панель управления оформлением -->
+          <div class="controls-row">
+            <select id="bgStudioTheme" class="glass-input" onchange="renderVisualCard()">
+              <option value="dark">🌙 Dark Cyberpunk</option>
+              <option value="clean">🤍 Clean Studio</option>
+              <option value="marble">🏛️ Marble Premium</option>
+              <option value="neon">⚡ Neon Glow</option>
+            </select>
+
+            <button class="btn btn-primary btn-sm glass-btn-primary" onclick="downloadCurrentSlide()">
+              📥 Скачать слайд (PNG)
+            </button>
+          </div>
+        </div>
+
+        <!-- Холст Canvas -->
+        <div class="card-body visual-card-container">
+          <canvas id="cardCanvas" width="900" height="1200"></canvas>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           4. ТЕКСТОВЫЙ РЕЗУЛЬТАТ (SEO & ТЕГИ)
+           ========================================== -->
+      <section class="card glass-card">
+        <h3>📄 Сгенерированный контент</h3>
+        
+        <div class="form-group" style="margin-top: 1rem;">
+          <label style="font-size: 0.85rem; color: var(--text-muted);">SEO Описание для маркетплейса:</label>
+          <div id="resDescription" class="glass-input" style="min-height: 80px; white-space: pre-wrap; margin-top: 0.25rem;">
+Текст SEO-описания появится здесь после нажатия кнопки «Сгенерировать».
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label style="font-size: 0.85rem; color: var(--text-muted);">Поисковые теги и ключи:</label>
+          <div id="resKeywords" class="glass-input" style="white-space: pre-wrap; margin-top: 0.25rem;">
+#мышь #беспроводная #узбекский маркетплейс #uzum
+          </div>
+        </div>
+      </section>
+
+      <!-- Скрытые технические элементы для считывания данных Canvas -->
+      <div style="display:none;">
+        <div id="resTitle">Название товара</div>
+        <div id="resInfographic">⚡ Высокое качество&#10;🛡️ Гарантия 1 год</div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ==========================================
+       5. МОДАЛЬНОЕ ОКНО ТАРИФОВ И ОПЛАТЫ (PAYWALL)
+       ========================================== -->
+  <div id="paywallModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card glass-card modal-large">
+      <div class="modal-header">
+        <h2>👑 Выберите тарифный план</h2>
+        <button class="close-btn" onclick="closePaywall()">✕</button>
+      </div>
+
+      <!-- Реферальный блок -->
+      <div class="referral-box glass-card">
+        <div class="ref-info">
+          <h4>🎁 Приведи друзей — получи скидку до $2!</h4>
+          <p style="font-size: 0.8rem; color: var(--text-muted);">Скидка $1 за каждого друга (максимум $2 за 3+ друзей).</p>
+          <span id="refStatusBadge" class="ref-badge" style="display: inline-block; margin-top: 0.4rem;">
+            Приглашено: <strong id="invitedCount">0</strong> (Скидка: $<span id="discountVal">0</span>)
+          </span>
+        </div>
+      </div>
+
+      <!-- Сетка тарифных планов -->
+      <div class="pricing-grid">
+        
+        <!-- FREE -->
+        <div class="price-card glass-card">
+          <h3>Free</h3>
+          <div class="price-val">$0</div>
+          <p class="price-limit">1 пак в день</p>
+          <ul style="font-size: 0.8rem; text-align: left; list-style: none; margin-bottom: 1rem; color: var(--text-muted);">
+            <li>✔ 1 генерация в день</li>
+            <li>✔ Базовый Canvas</li>
+          </ul>
+          <button class="btn glass-btn" disabled>Текущий тариф</button>
+        </div>
+
+        <!-- PRO -->
+        <div class="price-card glass-card popular">
+          <span style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--primary); color: #fff; font-size: 0.65rem; padding: 0.2rem 0.5rem; border-radius: 8px; font-weight: bold;">Популярный</span>
+          <h3>PRO</h3>
+          <div class="price-val"><span id="proPriceText">$5</span> <span style="font-size: 0.8rem;">/ мес</span></div>
+          <p class="price-limit">5–7 паков в день</p>
+          
+          <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+            <button class="btn btn-primary glass-btn-primary btn-sm" onclick="payWithStars('PRO')">⭐ Telegram Stars (250 XTR)</button>
+            <button class="btn glass-btn btn-sm" onclick="selectPlan('PRO')">💳 Оплата (Click / Payme)</button>
+          </div>
+        </div>
+
+        <!-- VIP -->
+        <div class="price-card glass-card vip">
+          <h3>VIP Unlim</h3>
+          <div class="price-val"><span id="vipPriceText">$10</span> <span style="font-size: 0.8rem;">/ мес</span></div>
+          <p class="price-limit">Безлимитно (∞)</p>
+          
+          <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+            <button class="btn btn-pro btn-sm" onclick="payWithStars('VIP')">⭐ Telegram Stars (500 XTR)</button>
+            <button class="btn glass-btn btn-sm" onclick="selectPlan('VIP')">💳 Оплата (Click / Payme)</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Подключение клиентского скрипта -->
+  <script src="app.js"></script>
+</body>
+</html>
