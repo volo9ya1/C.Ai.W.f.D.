@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { Telegraf, Markup } = require('telegraf');
-const { GoogleGenAI } = require('@google/genai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // ==========================================
 // 1. ИНИЦИАЛИЗАЦИЯ И КОНФИГУРАЦИЯ
@@ -20,10 +20,10 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'https://your-frontend-domain.o
 const bot = new Telegraf(BOT_TOKEN);
 
 // Инициализация Google Gemini AI SDK
-const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
 // Простейшая база данных в памяти (In-Memory DB)
-// В продакшене рекомендуется использовать PostgreSQL / MongoDB / Redis
 const usersDB = {};
 
 // Вспомогательная функция получения/создания профиля
@@ -45,15 +45,13 @@ function getUserProfile(telegramId, username = '') {
 // 2. ЛОГИКА TELEGRAM БОТА (TELEGRAF)
 // ==========================================
 
-// Команда /start (с поддержкой реферальных ссылок)
 bot.start((ctx) => {
   const telegramId = ctx.from.id;
   const username = ctx.from.username || '';
-  const startPayload = ctx.payload; // Аргументы реферальной ссылки
+  const startPayload = ctx.payload;
 
   const user = getUserProfile(telegramId, username);
 
-  // Обработка реферального кода (например: t.me/bot?start=ref_12345)
   if (startPayload && startPayload.startsWith('ref_')) {
     const referrerId = startPayload.replace('ref_', '');
     if (referrerId !== String(telegramId) && !user.invitedBy) {
@@ -65,7 +63,7 @@ bot.start((ctx) => {
     }
   }
 
-  const discountSum = Math.min(user.invitedCount, 2) * 12500; // Пример скидки в сумах
+  const discountSum = Math.min(user.invitedCount, 2) * 12500;
 
   ctx.reply(
     `👋 Привет, ${ctx.from.first_name}!\n\n` +
@@ -83,7 +81,6 @@ bot.start((ctx) => {
   );
 });
 
-// Меню тарифов
 bot.action('SHOW_TARIFS', (ctx) => {
   const telegramId = ctx.from.id;
   const user = getUserProfile(telegramId);
@@ -107,7 +104,6 @@ bot.action('SHOW_TARIFS', (ctx) => {
   );
 });
 
-// Показ реферальной ссылки
 bot.action('SHOW_REF', (ctx) => {
   const telegramId = ctx.from.id;
   const botUsername = ctx.botInfo.username;
@@ -116,7 +112,7 @@ bot.action('SHOW_REF', (ctx) => {
   ctx.reply(
     `🎁 **Реферальная программа**\n\n` +
     `Делись ссылкой с друзьями и получай скидку на тарифы PRO и VIP!\n` +
-    `Скидка $1 (~12 500 сум) за каждого друга, максимум $2.\n\n` +
+    `Скидка ~12 500 сум за каждого друга, максимум 2 друга.\n\n` +
     `🔗 Твоя ссылка:\n\`${refLink}\``,
     { parse_mode: 'Markdown' }
   );
@@ -127,7 +123,6 @@ bot.action('BACK_TO_MAIN', (ctx) => {
   ctx.reply('Используйте /start для вызова главного меню.');
 });
 
-// Подтверждение оплаты через Telegram Stars
 bot.on('pre_checkout_query', (ctx) => ctx.answerPreCheckoutQuery(true));
 
 bot.on('successful_payment', (ctx) => {
@@ -145,7 +140,6 @@ bot.on('successful_payment', (ctx) => {
 // 3. API ЭНДПОИНТЫ ДЛЯ ФРОНТЕНДА (EXPRESS)
 // ==========================================
 
-// Получение статуса пользователя
 app.get('/api/user-status/:telegramId', (req, res) => {
   const { telegramId } = req.params;
   const user = getUserProfile(telegramId);
@@ -156,7 +150,6 @@ app.get('/api/user-status/:telegramId', (req, res) => {
   });
 });
 
-// Генерация инфографики и SEO текста с помощью Gemini AI
 app.post('/api/generate-pack', async (req, res) => {
   const { telegramId, productName, price, details } = req.body;
 
@@ -164,7 +157,6 @@ app.post('/api/generate-pack', async (req, res) => {
     return res.status(400).json({ error: 'Название товара обязательно' });
   }
 
-  // Проверка лимитов пользователя (если передавали telegramId)
   if (telegramId) {
     const user = getUserProfile(telegramId);
     if (user.plan !== 'VIP' && user.packsLeft <= 0) {
@@ -194,18 +186,14 @@ app.post('/api/generate-pack', async (req, res) => {
 }
 `;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt
-    });
+    // Вызов Gemini через правильный старый/стабильный SDK метод
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    let rawText = response.text().trim();
 
-    let rawText = response.text.trim();
-    // Очистка от возможных символов форматирования markdown
     rawText = rawText.replace(/^```json\s*/i, '').replace(/\s*```$/, '');
-
     const parsedData = JSON.parse(rawText);
 
-    // Списываем лимит при успешной генерации
     if (telegramId) {
       const user = getUserProfile(telegramId);
       if (user.plan !== 'VIP' && user.packsLeft > 0) {
@@ -221,7 +209,6 @@ app.post('/api/generate-pack', async (req, res) => {
   }
 });
 
-// Выставление счета для Telegram Stars
 app.post('/api/create-stars-invoice', async (req, res) => {
   const { telegramId, plan } = req.body;
   const starsAmount = plan === 'VIP' ? 500 : 250;
@@ -231,7 +218,7 @@ app.post('/api/create-stars-invoice', async (req, res) => {
       title: `Подписка ${plan}`,
       description: `Активация тарифа ${plan} в E-Commerce AI Combain на 30 дней`,
       payload: `${telegramId}_${plan}`,
-      provider_token: "", // Для Telegram Stars оставляем пустым
+      provider_token: "",
       currency: "XTR",
       prices: [{ label: `Тариф ${plan}`, amount: starsAmount }]
     });
@@ -243,12 +230,10 @@ app.post('/api/create-stars-invoice', async (req, res) => {
   }
 });
 
-// Проверка работоспособности сервера (Health check)
 app.get('/health', (req, res) => {
   res.send('Server is healthy and running!');
 });
 
-// Запуск бота и сервера
 bot.launch().then(() => {
   console.log('🤖 Telegram бот успешно запущен');
 }).catch((err) => {
